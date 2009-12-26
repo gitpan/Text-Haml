@@ -1,0 +1,28 @@
+lib/Text/Haml.pm
+Makefile.PL
+MANIFEST			This list of files
+MANIFEST.SKIP
+t/class-and-id.t
+t/comments.t
+t/complete.t
+t/div.t
+t/doctype.t
+t/escaping.t
+t/exception.t
+t/filters.t
+t/helpers.t
+t/html-attributes.t
+t/html-elements.t
+t/html-escaping.t
+t/html-unescaping.t
+t/interpolation.t
+t/multiline.t
+t/parse.t
+t/perl.t
+t/plain.t
+t/self-closing.t
+t/unicode.t
+t/vars.t
+t/whitespace-preservation.t
+t/whitespace-removal.t
+META.yml                                 Module meta-data (added by MakeMaker)
