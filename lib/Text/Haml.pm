@@ -7,7 +7,7 @@ use IO::File;
 use Scalar::Util qw/weaken/;
 use Encode qw/decode/;
 
-our $VERSION = '0.990101';
+our $VERSION = '0.990102';
 
 use constant CHUNK_SIZE => 4096;
 
@@ -59,16 +59,17 @@ sub new {
 
     # Default attributes
     my $attrs = {};
-    $attrs->{tape}        = [];
-    $attrs->{encoding}    = 'utf-8';
-    $attrs->{escape_html} = 1;
-    $attrs->{helpers}     = {};
-    $attrs->{format}      = 'xhtml';
-    $attrs->{prepend}     = '';
-    $attrs->{append}      = '';
-    $attrs->{namespace}   = '';
-    $attrs->{vars}        = {};
-    $attrs->{escape}      = <<'EOF';
+    $attrs->{vars_as_subs} = 0;
+    $attrs->{tape}         = [];
+    $attrs->{encoding}     = 'utf-8';
+    $attrs->{escape_html}  = 1;
+    $attrs->{helpers}      = {};
+    $attrs->{format}       = 'xhtml';
+    $attrs->{prepend}      = '';
+    $attrs->{append}       = '';
+    $attrs->{namespace}    = '';
+    $attrs->{vars}         = {};
+    $attrs->{escape}       = <<'EOF';
     my $s = shift;
     $s =~ s/&/&amp;/g;
     $s =~ s/</&lt;/g;
@@ -79,7 +80,7 @@ sub new {
 EOF
 
     $attrs->{filters} = {
-        plain    => sub { $_[0] =~ s/\n*$//; $_[0] },
+        plain => sub { $_[0] =~ s/\n*$//; $_[0] },
         escaped  => sub { $_[0] },
         preserve => sub { $_[0] =~ s/\n/&#x000A;/g; $_[0] },
         javascript => sub {
@@ -101,6 +102,10 @@ EOF
 }
 
 # Yes, i know!
+sub vars_as_subs {
+    @_ > 1 ? $_[0]->{vars_as_subs} = $_[1] : $_[0]->{vars_as_subs};
+}
+
 sub format   { @_ > 1 ? $_[0]->{format}   = $_[1] : $_[0]->{format} }
 sub tape     { @_ > 1 ? $_[0]->{tape}     = $_[1] : $_[0]->{tape} }
 sub encoding { @_ > 1 ? $_[0]->{encoding} = $_[1] : $_[0]->{encoding} }
@@ -113,13 +118,21 @@ sub escape_html {
 sub code     { @_ > 1 ? $_[0]->{code}     = $_[1] : $_[0]->{code} }
 sub compiled { @_ > 1 ? $_[0]->{compiled} = $_[1] : $_[0]->{compiled} }
 sub helpers  { @_ > 1 ? $_[0]->{helpers}  = $_[1] : $_[0]->{helpers} }
-sub helpers_arg  { @_ > 1 ? $_[0]->{helpers_arg}  = $_[1] :
-    $_[0]->{helpers_arg} }
 sub filters  { @_ > 1 ? $_[0]->{filters}  = $_[1] : $_[0]->{filters} }
 sub prepend  { @_ > 1 ? $_[0]->{prepend}  = $_[1] : $_[0]->{prepend} }
 sub append   { @_ > 1 ? $_[0]->{append}   = $_[1] : $_[0]->{append} }
 sub escape   { @_ > 1 ? $_[0]->{escape}   = $_[1] : $_[0]->{escape} }
-sub vars   { @_ > 1 ? $_[0]->{vars}   = $_[1] : $_[0]->{vars} }
+sub vars     { @_ > 1 ? $_[0]->{vars}     = $_[1] : $_[0]->{vars} }
+
+sub helpers_arg {
+    if (@_ > 1) {
+        $_[0]->{helpers_arg} = $_[1];
+        weaken $_[0]->{helpers_arg};
+    }
+    else {
+        return $_[0]->{helpers_arg};
+    }
+}
 
 sub namespace {
     @_ > 1
@@ -152,13 +165,13 @@ sub parse {
 
     $self->tape([]);
 
-    my $level_token       = quotemeta ' ';
-    my $escape_token      = quotemeta '&';
-    my $unescape_token    = quotemeta '!';
-    my $expr_token        = quotemeta '=';
-    my $tag_start         = quotemeta '%';
-    my $class_start       = quotemeta '.';
-    my $id_start          = quotemeta '#';
+    my $level_token    = quotemeta ' ';
+    my $escape_token   = quotemeta '&';
+    my $unescape_token = quotemeta '!';
+    my $expr_token     = quotemeta '=';
+    my $tag_start      = quotemeta '%';
+    my $class_start    = quotemeta '.';
+    my $id_start       = quotemeta '#';
 
     my $attributes_start = quotemeta '{';
     my $attributes_end   = quotemeta '}';
@@ -166,22 +179,24 @@ sub parse {
     my $attributes_sep   = quotemeta ',';
     my $attribute_prefix = quotemeta ':';
     my $attribute_name   = qr/(?:$STRING_RE|.*?(?= |$attribute_arrow))/;
-    my $attribute_value  = qr/(?:$STRING_RE|[^ $attributes_sep$attributes_end]+)/x;
+    my $attribute_value =
+      qr/(?:$STRING_RE|[^ $attributes_sep$attributes_end]+)/x;
 
     my $attributes_start2 = quotemeta '(';
     my $attributes_end2   = quotemeta ')';
     my $attribute_arrow2  = quotemeta '=';
-    my $attributes_sep2    = ' ';
+    my $attributes_sep2   = ' ';
     my $attribute_name2   = qr/(?:$STRING_RE|.*?(?= |$attribute_arrow2))/;
-    my $attribute_value2  = qr/(?:$STRING_RE|[^ $attributes_sep2$attributes_end2]+)/;
+    my $attribute_value2 =
+      qr/(?:$STRING_RE|[^ $attributes_sep2$attributes_end2]+)/;
 
-    my $filter_token      = quotemeta ':';
-    my $quote             = "'";
-    my $comment_token     = quotemeta '-#';
-    my $trim_in           = quotemeta '<';
-    my $trim_out          = quotemeta '>';
-    my $autoclose_token   = quotemeta '/';
-    my $multiline_token   = quotemeta '|';
+    my $filter_token    = quotemeta ':';
+    my $quote           = "'";
+    my $comment_token   = quotemeta '-#';
+    my $trim_in         = quotemeta '<';
+    my $trim_out        = quotemeta '>';
+    my $autoclose_token = quotemeta '/';
+    my $multiline_token = quotemeta '|';
 
     my $tag_name = qr/([^
         $level_token
@@ -225,7 +240,8 @@ sub parse {
         # Inside a filter
         my $prev = $tape->[-1];
         if ($prev && $prev->{type} eq 'filter') {
-            if ($prev->{level} < $el->{level} || ($i + 1 < @lines && $line eq ''))
+            if ($prev->{level} < $el->{level}
+                || ($i + 1 < @lines && $line eq ''))
             {
                 $prev->{text} .= "\n" if $prev->{text};
                 $prev->{text} .= $line;
@@ -245,8 +261,9 @@ sub parse {
 
         # Doctype
         if ($line =~ m/^!!!(?: ([^ ]+)(?: (.*))?)?$/) {
-            $el->{type} = 'text';
-            $el->{text} = $self->_doctype($1, $2);
+            $el->{type}   = 'text';
+            $el->{escape} = 0;
+            $el->{text}   = $self->_doctype($1, $2);
             push @$tape, $el;
             next;
         }
@@ -254,7 +271,7 @@ sub parse {
         # HTML comment
         if ($line =~ m/^\/(?:\[if (.*)?\])?(?: (.*))?/) {
             $el->{type} = 'html_comment';
-            $el->{if} = $1 if $1;
+            $el->{if}   = $1 if $1;
             $el->{text} = $2 if $2;
             push @$tape, $el;
             next;
@@ -262,8 +279,7 @@ sub parse {
 
         # Escaping, everything after is a text
         if ($line =~ s/^\\//) {
-            $el->{type} = 'text',
-            $el->{text} = $line;
+            $el->{type} = 'text', $el->{text} = $line;
             push @$tape, $el;
             next;
         }
@@ -278,9 +294,9 @@ sub parse {
 
         # Preserve whitespace
         if ($line =~ s/^~ \s*(.*)//) {
-            $el->{type} = 'text';
-            $el->{text} = $1;
-            $el->{expr} = 1;
+            $el->{type}                = 'text';
+            $el->{text}                = $1;
+            $el->{expr}                = 1;
             $el->{preserve_whitespace} = 1;
             push @$tape, $el;
             next;
@@ -305,9 +321,9 @@ sub parse {
                 if ($line =~ s/^$class_start$tag_name//) {
                     my $class = join(' ', split(/\./, $1));
 
-                    $el->{name} ||= 'div';
+                    $el->{name}  ||= 'div';
                     $el->{class} ||= [];
-                    push @{$el->{class}},$class;
+                    push @{$el->{class}}, $class;
                 }
                 elsif ($line =~ s/^$id_start$tag_name//) {
                     my $id = $1;
@@ -333,7 +349,8 @@ sub parse {
                     $attribute_arrow2\s*
                     $attribute_value2
                 )
-                /x)
+                /x
+              )
             {
                 my $attrs = [];
 
@@ -353,7 +370,8 @@ sub parse {
                     elsif ($type eq 'perl' && $line =~ s/^$attributes_end//) {
                         last;
                     }
-                    elsif ($type eq 'html' && $line =~ s/^$attributes_end2//) {
+                    elsif ($type eq 'html' && $line =~ s/^$attributes_end2//)
+                    {
                         last;
                     }
                     else {
@@ -363,17 +381,21 @@ sub parse {
                                     ($attribute_name)\s*
                                     $attribute_arrow\s*
                                     ($attribute_value)\s*
-                                    (?:$attributes_sep\s*)?//x)
+                                    (?:$attributes_sep\s*)?//x
+                          )
                         {
-                            $name = $1;
+                            $name  = $1;
                             $value = $2;
                         }
-                        elsif ($line =~ s/^\s*
+                        elsif (
+                            $line =~ s/^\s*
                                     ($attribute_name2)\s*
                                     $attribute_arrow2\s*
                                     ($attribute_value2)\s*
-                                    (?:$attributes_sep2\s*)?//x) {
-                            $name = $1;
+                                    (?:$attributes_sep2\s*)?//x
+                          )
+                        {
+                            $name  = $1;
                             $value = $2;
                         }
                         else {
@@ -389,14 +411,18 @@ sub parse {
                         if ($value =~ s/^(?:'|")//) {
                             $value =~ s/(?:'|")$//;
                             $value =~ s/($UNESCAPE_RE)/$ESCAPE->{$1}/g;
-                            push @$attrs, $name => {type => 'text', text => $value};
+                            push @$attrs,
+                              $name => {type => 'text', text => $value};
                         }
                         elsif ($value eq 'true' || $value eq 'false') {
-                            push @$attrs, $name =>
-                              {type => 'boolean', text => $value eq 'true' ? 1 : 0};
+                            push @$attrs, $name => {
+                                type => 'boolean',
+                                text => $value eq 'true' ? 1 : 0
+                            };
                         }
                         else {
-                            push @$attrs, $name => {type => 'expr', text => $value};
+                            push @$attrs,
+                              $name => {type => 'expr', text => $value};
                         }
                     }
                 }
@@ -491,13 +517,6 @@ EOF
     $code .= qq/my \$self = shift;/;
 
     $code .= qq/no strict 'refs'; no warnings 'redefine';/;
-    # Install variables
-    foreach my $var (sort keys %vars) {
-        $code .= qq/sub $var() : lvalue; *$var = sub () : lvalue {\$self->vars->{'$var'}};/;
-    }
-    $code .= qq/use strict; use warnings;/;
-
-    $code .= $self->prepend;
 
     # Install helpers
     for my $name (sort keys %{$self->helpers}) {
@@ -507,6 +526,22 @@ EOF
         $code .= " *$name = sub { \$self";
         $code .= "->helpers->{'$name'}->(\$self->helpers_arg, \@_) };";
     }
+
+    # Install variables
+    foreach my $var (sort keys %vars) {
+        if ($self->vars_as_subs) {
+            next if $self->helpers->{$var};
+            $code
+              .= qq/sub $var() : lvalue; *$var = sub () : lvalue {\$self->vars->{'$var'}};/;
+        }
+        else {
+            $code .= qq/my \$$var = \$self->vars->{'$var'};/;
+        }
+    }
+
+    $code .= qq/use strict; use warnings;/;
+
+    $code .= $self->prepend;
 
     my $stack = [];
 
@@ -527,7 +562,18 @@ EOF
             }
         }
 
-        if ($el->{line} && $prev_el && $prev_el->{level} >= $el->{level}) {
+        my $escape = '';
+        if (   (!exists $el->{escape} && $self->escape_html)
+            || (exists $el->{escape} && $el->{escape} == 1))
+        {
+            $escape = 'escape';
+        }
+
+        if (   $el->{type} ne 'block'
+            && $el->{line}
+            && $prev_el
+            && $prev_el->{level} >= $el->{level})
+        {
             while (my $poped = pop @$stack) {
                 my $poped_offset = ' ' x $poped->{level};
 
@@ -552,10 +598,10 @@ EOF
 
             my $attrs = '';
             if ($el->{attrs}) {
-                for (my $i = 0; $i < @{$el->{attrs}}; $i+=2) {
-                    my $name = $el->{attrs}->[$i];
+                for (my $i = 0; $i < @{$el->{attrs}}; $i += 2) {
+                    my $name  = $el->{attrs}->[$i];
                     my $value = $el->{attrs}->[$i + 1];
-                    my $text = $value->{text};
+                    my $text  = $value->{text};
 
                     if ($name eq 'class') {
                         $el->{class} ||= [];
@@ -614,13 +660,14 @@ EOF
             $output .= qq|"$offset<$el->{name}$tail$attrs$ending>"|;
 
             if ($el->{text} && $el->{expr}) {
-                $output .= '. ' . $el->{text};
+                $output .= '. (' . $el->{text} . ')';
                 $output .= qq| . "</$el->{name}>"|;
             }
             elsif ($el->{text}) {
-                $output
-                  .= '."' . $self->_parse_text($el->{text}) . '"';
-                $output .= qq|. "</$el->{name}>"| unless $el->{autoclose};
+                $output .= qq/. $escape / . '"'
+                  . $self->_parse_text($el->{text}) . '";';
+                $output .= qq|\$_H .= "</$el->{name}>"|
+                  unless $el->{autoclose};
             }
             elsif (
                 !$self->tape->[$count + 1]
@@ -628,7 +675,14 @@ EOF
                     && $self->tape->[$count + 1]->{level} == $el->{level})
               )
             {
-                $output .= qq|. "</$el->{name}>"| unless $el->{autoclose};
+                if (  !$self->tape->[$count + 1]
+                    || $self->tape->[$count + 1]->{type} ne 'block')
+                {
+                    $output .= qq|. "</$el->{name}>"| unless $el->{autoclose};
+                }
+                else {
+                    push @$stack, $el;
+                }
             }
             elsif (!$el->{autoclose}) {
                 push @$stack, $el;
@@ -643,17 +697,14 @@ EOF
             $el->{text} = '' unless defined $el->{text};
 
             if ($el->{expr}) {
-                my $escape = '';
-                if ((!exists $el->{escape} && $self->escape_html) || (exists
-                        $el->{escape} && $el->{escape} == 1)) {
-                    $escape = 'escape';
-                }
-
                 $output .= qq/. $escape / . +$el->{text};
                 $output .= qq/;\$_H .= "\n"/;
             }
             elsif ($el->{text}) {
-                $output .= '."' . $self->_parse_text($el->{text}) . '"';
+                $output
+                  .= '.'
+                  . qq/$escape / . '"'
+                  . $self->_parse_text($el->{text}) . '"';
                 $output .= qq/. "\n"/;
             }
 
@@ -686,7 +737,8 @@ EOF
             die "unknown filter: $el->{name}" unless $filter;
 
             if ($el->{name} eq 'escaped') {
-                $output = qq/escape "/ . $self->_parse_text($el->{text}) . qq/\n";/;
+                $output =
+                  qq/escape "/ . $self->_parse_text($el->{text}) . qq/\n";/;
             }
             else {
                 $el->{text} = $filter->($el->{text});
@@ -754,14 +806,14 @@ sub _parse_text {
     while (1) {
         my $t;
         my $escape = 0;
-        my $found = 0;
+        my $found  = 0;
         if ($text =~ s/^(.*?)?(?<!\\)\#{//) {
             $found = 1;
-            $t = $1;
+            $t     = $1;
         }
         elsif ($text =~ s/^(.*?)?\\\\\#{//) {
-            $found = 1;
-            $t = $1;
+            $found  = 1;
+            $t      = $1;
             $escape = 1;
         }
 
@@ -812,6 +864,9 @@ sub interpret {
     my $compiled = $self->compiled;
 
     my $output = eval { $compiled->($self) };
+
+    # Destroy variables refs to avoid memory leaks
+    $self->vars({});
 
     if ($@) {
         $self->error($@);
@@ -864,7 +919,7 @@ sub _doctype {
     my $self = shift;
     my ($type, $encoding) = @_;
 
-    $type ||= '';
+    $type     ||= '';
     $encoding ||= 'utf-8';
 
     $type = lc $type;
@@ -878,36 +933,45 @@ sub _doctype {
 
     if ($self->format eq 'xhtml') {
         if ($type eq 'strict') {
-            return q|<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">|;
+            return
+              q|<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">|;
         }
         elsif ($type eq 'frameset') {
-            return q|<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">|;
+            return
+              q|<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">|;
         }
         elsif ($type eq '5') {
             return '<!DOCTYPE html>';
         }
         elsif ($type eq '1.1') {
-            return q|<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">|;
+            return
+              q|<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">|;
         }
         elsif ($type eq 'basic') {
-            return q|<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML Basic 1.1//EN" "http://www.w3.org/TR/xhtml-basic/xhtml-basic11.dtd">|;
+            return
+              q|<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML Basic 1.1//EN" "http://www.w3.org/TR/xhtml-basic/xhtml-basic11.dtd">|;
         }
         elsif ($type eq 'mobile') {
-            return q|<!DOCTYPE html PUBLIC "-//WAPFORUM//DTD XHTML Mobile 1.2//EN" "http://www.openmobilealliance.org/tech/DTD/xhtml-mobile12.dtd">|;
+            return
+              q|<!DOCTYPE html PUBLIC "-//WAPFORUM//DTD XHTML Mobile 1.2//EN" "http://www.openmobilealliance.org/tech/DTD/xhtml-mobile12.dtd">|;
         }
         else {
-            return q|<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">|;
+            return
+              q|<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">|;
         }
     }
     elsif ($self->format eq 'html4') {
         if ($type eq 'strict') {
-            return q|<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">|;
+            return
+              q|<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">|;
         }
         elsif ($type eq 'frameset') {
-            return q|<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">|;
+            return
+              q|<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">|;
         }
         else {
-            return q|<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">|;
+            return
+              q|<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">|;
         }
     }
     elsif ($self->format eq 'html5') {
@@ -979,6 +1043,26 @@ L<Text::Haml> implements the following attributes:
 
     Default is on.
 
+=head2 C<vars_as_subs>
+
+When options is B<NOT SET> (by default) passed variables are normal Perl
+variables and are use with C<$> prefix.
+
+    $haml->render('%p $var', var => 'hello');
+
+When this option is B<SET> passed variables are Perl lvalue
+subroutines and are used without C<$> prefix.
+
+    $haml->render('%p var', var => 'hello');
+
+But if you declare Perl variable in a block, it must be used with C<$>
+prefix.
+
+    $haml->render('<<EOF')
+        - my $foo;
+        %p= $foo
+    EOF
+
 =head2 C<helpers>
 
     Holds helpers subroutines. Helpers can be called in Haml text as normal Perl
@@ -1019,6 +1103,12 @@ L<Text::Haml> implements the following attributes:
 
     $haml->add_helper(current_time => sub { time });
 
+=head2 C<add_filter>
+
+    Adds a new filter.
+
+    $haml->add_filter(compress => sub { $_[0] =~ s/\s+/ /g; $_[0]});
+
 =head2 C<render>
 
     Renders Haml string. Returns undef on error. See error attribute.
@@ -1052,21 +1142,6 @@ Perl-style is supported but not recommented, since your Haml template won't
 work with Ruby Haml implementation parser.
 
 $haml->render("%a{href => 'bar'}");
-
-=head2 Variables
-
-Passed variables are Perl lvalue subroutines and are used without C<$>
-prefix.
-
-$haml->render('%p var', var => 'hello');
-
-But if you declare Perl variable in a block, it must be used with C<$>
-prefix.
-
-$haml->render('<<EOF')
-    - my $foo;
-    %p= $foo
-EOF
 
 =head1 DEVELOPMENT
 
