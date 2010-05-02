@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Text-Haml
-version:            0.990102
+version:            0.990103
 abstract:           Haml parser
 author:
     - Viacheslav Tykhanovskyi <vti@cpan.org>
