@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Text-Haml
-version:            0.990103
+version:            0.990104
 abstract:           Haml parser
 author:
     - Viacheslav Tykhanovskyi <vti@cpan.org>
@@ -9,17 +9,19 @@ distribution_type:  module
 configure_requires:  {}
 build_requires:  {}
 requires:
-    perl:  5.008001
+    Encode:        0
+    IO::File:      0
+    perl:          5.008007
+    Scalar::Util:  0
 resources:
-    homepage:    http://mojolicious.org
     license:     http://dev.perl.org/licenses/
-    repository:  http://github.com/vti/text-haml/tree/master
+    repository:  http://github.com/vti/text-haml
 no_index:
     directory:
         - t
         - inc
         - t
-generated_by:       ExtUtils::MakeMaker version 6.50
+generated_by:       ExtUtils::MakeMaker version 6.56
 meta-spec:
     url:      http://module-build.sourceforge.net/META-spec-v1.4.html
     version:  1.4

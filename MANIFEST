@@ -20,6 +20,8 @@ t/multiline.t
 t/parse.t
 t/perl.t
 t/plain.t
+t/pod.t
+t/pod_coverage.t
 t/self-closing.t
 t/unicode.t
 t/vars.t
