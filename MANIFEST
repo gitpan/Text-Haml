@@ -2,6 +2,8 @@ lib/Text/Haml.pm
 Makefile.PL
 MANIFEST			This list of files
 MANIFEST.SKIP
+MYMETA.json
+MYMETA.yml
 t/class-and-id.t
 t/comments.t
 t/complete.t
@@ -22,9 +24,13 @@ t/perl.t
 t/plain.t
 t/pod.t
 t/pod_coverage.t
+t/render1.haml
+t/render1.html
+t/render_file.t
 t/self-closing.t
 t/unicode.t
 t/vars.t
 t/whitespace-preservation.t
 t/whitespace-removal.t
-META.yml                                 Module meta-data (added by MakeMaker)
+META.yml                                 Module YAML meta-data (added by MakeMaker)
+META.json                                Module JSON meta-data (added by MakeMaker)
