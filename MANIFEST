@@ -4,6 +4,7 @@ MANIFEST			This list of files
 MANIFEST.SKIP
 MYMETA.json
 MYMETA.yml
+README.pod
 t/class-and-id.t
 t/comments.t
 t/complete.t
@@ -28,6 +29,8 @@ t/render1.haml
 t/render1.html
 t/render_file.t
 t/self-closing.t
+t/template-with-vars.haml
+t/template.haml
 t/unicode.t
 t/vars.t
 t/whitespace-preservation.t

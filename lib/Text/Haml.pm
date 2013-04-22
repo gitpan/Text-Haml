@@ -11,7 +11,7 @@ use File::Spec;
 use File::Basename ();
 use URI::Escape ();
 
-our $VERSION = '0.990107';
+our $VERSION = '0.990108';
 
 use constant CHUNK_SIZE => 4096;
 
@@ -248,6 +248,7 @@ sub parse {
     my $tape = $self->tape;
 
     my $level;
+    my @multiline_el_queue;
     my @lines = split /\n/, $tmpl;
     push @lines, '' if $tmpl =~ m/\n$/;
     @lines = ('') if $tmpl eq "\n";
@@ -261,7 +262,7 @@ sub parse {
             $level = 0;
         }
 
-        my $el = {level => $level, type => 'text', line => $line};
+        my $el = {level => $level, type => 'text', line => $line, lineno => $i+1};
 
         # Haml comment
         if ($line =~ m/^$comment_token(?: (.*))?/) {
@@ -280,6 +281,7 @@ sub parse {
                 $prev->{text} .= "\n" if $prev->{text};
                 $prev->{text} .= $line;
                 $prev->{line} .= "\n" . (' ' x $el->{level}) . $el->{line};
+                _update_lineno($prev, $i);
                 next;
             }
         }
@@ -401,6 +403,7 @@ sub parse {
                     if (!$line) {
                         $line = $lines[++$i] || last;
                         $el->{line} .= "\n$line";
+                        _update_lineno($el, $i);
                     }
                     elsif ($type eq 'perl' && $line =~ s/^$attributes_end//) {
                         last;
@@ -498,23 +501,19 @@ sub parse {
             # For the first time
             if (!$tape->[-1] || ref $tape->[-1]->{text} ne 'ARRAY') {
                 $el->{text} = [$line];
-                $el->{line} = $el->{line} . "\n" || $line . "$1|\n";
+                $el->{line} ||= $line . "$1|"; # XXX: is this really necessary?
 
                 push @$tape, $el;
+                push @multiline_el_queue, $el;
             }
 
             # Continue concatenation
             else {
                 my $prev_stack_el = $tape->[-1];
                 push @{$prev_stack_el->{text}}, $line;
-                $prev_stack_el->{line} .= $line . "$1|\n";
+                $prev_stack_el->{line} .= "\n" . $line . "$1|";
+                _update_lineno($prev_stack_el, $i);
             }
-        }
-
-        # For the last time
-        elsif ($tape->[-1] && ref $tape->[-1]->{text} eq 'ARRAY') {
-            $tape->[-1]->{text} = join(" ", @{$tape->[-1]->{text}}, $line);
-            $tape->[-1]->{line} .= $line;
         }
 
         # Normal text
@@ -524,6 +523,20 @@ sub parse {
             push @$tape, $el;
         }
     }
+
+    # Finalize multilines
+    for my $el (@multiline_el_queue) {
+        $el->{text} = join(" ", @{$el->{text}});
+    }
+}
+
+# Updates lineno entry on the tape element
+# for itens spanning more than one line
+sub _update_lineno {
+    my ($el, $lineno) = @_;
+    $lineno++;    # report line numbers starting at 1 instead of 0
+    $el->{lineno} =~ s/^(\d+)(?:-\d+)?/$1-$lineno/;
+    return;
 }
 
 sub build {
@@ -673,7 +686,7 @@ EOF
                         elsif ($name eq 'id') {
                             $el->{id} ||= '';
                             $el->{id} = $el->{id} . '_' if $el->{id};
-                            $el->{id} .= $value->{text};
+                            $el->{id} .= $self->_parse_text($value->{text});
                             next ATTR;
                         }
 
@@ -1003,7 +1016,6 @@ sub render_file {
     # Open file
     my $file = IO::File->new;
     $file->open($self->fullpath, 'r') or die "Can't open template '$path': $!";
-    binmode $file, ':utf8';
 
     # Slurp file
     my $tmpl = '';
@@ -1035,6 +1047,11 @@ sub render_file {
 sub _fullpath {
     my $self = shift;
     my $path = shift;
+
+    if (File::Spec->file_name_is_absolute($path) and -r $path) {
+        $self->fullpath($path);
+        return;
+    }
 
     for my $p (@{$self->path}) {
         my $fullpath = File::Spec->catfile($p, $path);
@@ -1093,7 +1110,7 @@ sub _eq_mtime {
 sub _interpret_cached {
     my $self = shift;
 
-    my $compiled = require $self->cache_path;
+    my $compiled = do $self->cache_path;
     $self->compiled($compiled);
     return $self->interpret(@_);
 }
@@ -1179,7 +1196,7 @@ Text::Haml - Haml Perl implementation
 
     my $html = $haml->render('%p foo'); # <p>foo</p>
 
-    $html = $haml->render('= user', user => 'friend'); # <div>friend</div>
+    $html = $haml->render('= $user', user => 'friend'); # <div>friend</div>
 
     # Use Haml file
     $html = $haml->render_file('tmpl/index.haml', user => 'friend');
@@ -1420,15 +1437,27 @@ Viacheslav Tykhanovskyi, C<vti@cpan.org>.
 
 =head1 CREDITS
 
-In alphabetical order:
+In order of appearance:
 
 Nick Ragouzis
 
 Norman Clarke
 
+rightgo09
+
+Breno G. de Oliveira (garu)
+
+Yuya Tanaka
+
+Wanradt Koell (wanradt)
+
+Keedi Kim
+
+Carlos Lima
+
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2009-2011, Viacheslav Tykhanovskyi.
+Copyright (C) 2009-2013, Viacheslav Tykhanovskyi.
 
 This program is free software, you can redistribute it and/or modify it under
 the terms of the Artistic License version 2.0.
