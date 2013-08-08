@@ -31,8 +31,7 @@ t/self-closing.t
 t/template-with-vars.haml
 t/template.haml
 t/unicode.t
+t/unicode.t~
 t/vars.t
 t/whitespace-preservation.t
 t/whitespace-removal.t
-META.yml                                 Module YAML meta-data (added by MakeMaker)
-META.json                                Module JSON meta-data (added by MakeMaker)
