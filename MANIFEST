@@ -1,9 +1,9 @@
-lib/Text/Haml.pm
-Makefile.PL
-MANIFEST
-MANIFEST.bak
+Changes
+LICENSE
 MANIFEST.SKIP
 README.pod
+cpanfile
+lib/Text/Haml.pm
 t/class-and-id.t
 t/comments.t
 t/complete.t
@@ -34,5 +34,7 @@ t/unicode.t
 t/vars.t
 t/whitespace-preservation.t
 t/whitespace-removal.t
-META.yml                                 Module YAML meta-data (added by MakeMaker)
-META.json                                Module JSON meta-data (added by MakeMaker)
+Build.PL
+META.json
+META.yml
+MANIFEST
