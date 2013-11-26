@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More tests => 10;
 
 use Text::Haml;
 
@@ -48,3 +48,51 @@ EOF
 #compiles to
 #
 #I like cheese &amp; crackers
+
+$output = $haml->render(<<'EOF');
+%div= "<h1>text</h1>"
+EOF
+is($output, <<'EOF');
+<div>&lt;h1&gt;text&lt;/h1&gt;</div>
+EOF
+
+$output = $haml->render(<<'EOF');
+= "<h1>text</h1>"
+EOF
+is($output, <<'EOF');
+&lt;h1&gt;text&lt;/h1&gt;
+EOF
+
+$output = $haml->render(<<'EOF');
+%div!= "<h1 id=\"A > B\">text</h1>"
+EOF
+is($output, <<'EOF');
+<div><h1 id="A > B">text</h1></div>
+EOF
+
+$haml->escape_html(0);
+
+$output = $haml->render(<<'EOF');
+%div= "<h1 id=\"A > B\">text</h1>"
+EOF
+is($output, <<'EOF');
+<div><h1 id="A > B">text</h1></div>
+EOF
+
+$output = $haml->render(<<'EOF');
+- my $text = '<h1>text</h1>';
+%div= $text
+EOF
+is($output, <<'EOF');
+<div><h1>text</h1></div>
+EOF
+
+$haml->escape_html(1);
+
+$output = $haml->render(<<'EOF');
+- my $text = '<h1>text</h1>';
+%div!= $text
+EOF
+is($output, <<'EOF');
+<div><h1>text</h1></div>
+EOF

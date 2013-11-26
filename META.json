@@ -12,7 +12,7 @@
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
       "version" : "2"
    },
-   "name" : "text-haml",
+   "name" : "Text-Haml",
    "no_index" : {
       "directory" : [
          "t",
@@ -57,7 +57,7 @@
    "provides" : {
       "Text::Haml" : {
          "file" : "lib/Text/Haml.pm",
-         "version" : "0.990112"
+         "version" : "0.990113"
       }
    },
    "release_status" : "stable",
@@ -71,7 +71,7 @@
          "web" : "https://github.com/vti/text-haml"
       }
    },
-   "version" : "0.990112",
+   "version" : "0.990113",
    "x_contributors" : [
       "enosis <enosis@github.com>",
       "rightgo09 <skyarrow09@gmail.com>",
@@ -84,6 +84,6 @@
       "Keedi Kim <keedi.k@gmail.com>",
       "Hyungsuk Hong <aanoaa@gmail.com>",
       "TheAthlete <theathlet@yandex.ru>",
-      "vti <viacheslav.t@gmail.com>"
+      "Viacheslav Tykhanovskyi <viacheslav.t@gmail.com>"
    ]
 }

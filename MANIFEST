@@ -1,9 +1,12 @@
+Build.PL
 Changes
 LICENSE
 MANIFEST.SKIP
-README.pod
+META.json
+README.md
 cpanfile
 lib/Text/Haml.pm
+minil.toml
 t/class-and-id.t
 t/comments.t
 t/complete.t
@@ -34,7 +37,5 @@ t/unicode.t
 t/vars.t
 t/whitespace-preservation.t
 t/whitespace-removal.t
-Build.PL
-META.json
 META.yml
 MANIFEST

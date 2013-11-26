@@ -13,7 +13,7 @@ license: unknown
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
   version: 1.4
-name: text-haml
+name: Text-Haml
 no_index:
   directory:
     - t
@@ -27,7 +27,7 @@ no_index:
 provides:
   Text::Haml:
     file: lib/Text/Haml.pm
-    version: 0.990112
+    version: 0.990113
 requires:
   Carp: 0
   Data::Section::Simple: 0
@@ -41,7 +41,7 @@ resources:
   bugtracker: https://github.com/vti/text-haml/issues
   homepage: https://github.com/vti/text-haml
   repository: git://github.com/vti/text-haml.git
-version: 0.990112
+version: 0.990113
 x_contributors:
   - 'enosis <enosis@github.com>'
   - 'rightgo09 <skyarrow09@gmail.com>'
@@ -54,4 +54,4 @@ x_contributors:
   - 'Keedi Kim <keedi.k@gmail.com>'
   - 'Hyungsuk Hong <aanoaa@gmail.com>'
   - 'TheAthlete <theathlet@yandex.ru>'
-  - 'vti <viacheslav.t@gmail.com>'
+  - 'Viacheslav Tykhanovskyi <viacheslav.t@gmail.com>'

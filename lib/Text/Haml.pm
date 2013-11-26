@@ -12,7 +12,7 @@ use File::Basename ();
 use URI::Escape ();
 use Digest::MD5;
 
-our $VERSION = '0.990112';
+our $VERSION = '0.990113';
 
 use constant CHUNK_SIZE => 4096;
 
@@ -716,11 +716,16 @@ EOF
                 $output .= qq|"$offset<$el->{name}$tail$attrs$ending>"|;
 
                 if ($el->{text} && $el->{expr}) {
-                    $output .= '. (do {' . $el->{text} . '} || "")';
+                  if ($escape eq 'escape') {
+                    $output .= '. (' .qq/ $escape(/. ' do {' . $el->{text} . '} ) || "")';
                     $output .= qq| . "</$el->{name}>"|;
+                  } else {
+                    $output .= '. ( do {' . $el->{text} . '} || "")';
+                    $output .= qq| . "</$el->{name}>"|;
+                  }
                 }
                 elsif ($el->{text}) {
-                    $output .= qq/. $escape(/ . '"'
+                    $output .= qq/. $escape(/ . '"' 
                       . $self->_parse_text($el->{text}) . '");';
                     $output .= qq|\$_H .= "</$el->{name}>"|
                       unless $el->{autoclose};
@@ -921,7 +926,7 @@ sub _parse_text {
         }
     }
 
-    return $expr ? qq/"$output"/ : $output;
+    return $expr ? qq/$output/ : $output;
 }
 
 sub _parse_interpolation {
@@ -1069,6 +1074,8 @@ sub render_file {
       }
       $file->close;
     }
+
+    $content =~ s/\r//g;
 
     # Encoding
     $content = decode($self->encoding, $content) if $self->encoding;
