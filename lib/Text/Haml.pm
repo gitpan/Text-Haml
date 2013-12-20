@@ -12,7 +12,7 @@ use File::Basename ();
 use URI::Escape ();
 use Digest::MD5;
 
-our $VERSION = '0.990113';
+our $VERSION = '0.990114';
 
 use constant CHUNK_SIZE => 4096;
 
@@ -90,6 +90,7 @@ sub new {
 
     $attrs->{escape}       = <<'EOF';
     my $s = shift;
+    return unless defined $s;
     $s =~ s/&/&amp;/g;
     $s =~ s/</&lt;/g;
     $s =~ s/>/&gt;/g;
@@ -108,6 +109,13 @@ EOF
               . "    $_[0]\n"
               . "  //]]>\n"
               . "</script>";
+        },
+        css => sub {
+            "<style type='text/css'>\n"
+              . "  //<![CDATA[\n"
+              . "    $_[0]\n"
+              . "  //]]>\n"
+              . "</style>";
         },
     };
 
@@ -717,7 +725,7 @@ EOF
 
                 if ($el->{text} && $el->{expr}) {
                   if ($escape eq 'escape') {
-                    $output .= '. (' .qq/ $escape(/. ' do {' . $el->{text} . '} ) || "")';
+                    $output .= '. ( do { my $ret = ' .  qq/ $escape( do { $el->{text} } )/ . '; defined($ret) ? $ret : "" } )';
                     $output .= qq| . "</$el->{name}>"|;
                   } else {
                     $output .= '. ( do {' . $el->{text} . '} || "")';
@@ -753,7 +761,7 @@ EOF
                 $el->{text} = '' unless defined $el->{text};
 
                 if ($el->{expr}) {
-                    $output .= qq/. $escape / . +$el->{text};
+                    $output .= '. ( do { my $ret = ' .  qq/ $escape( do { $el->{text} } )/ . '; defined($ret) ? $ret : "" } )';
                     $output .= qq/;\$_H .= "\n"/;
                 }
                 elsif ($el->{text}) {
@@ -1316,6 +1324,7 @@ Default is
 
     $haml->escape(<<'EOF');
         my $s = shift;
+        return unless defined $s;
         $s =~ s/&/&amp;/g;
         $s =~ s/</&lt;/g;
         $s =~ s/>/&gt;/g;
