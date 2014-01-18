@@ -27,7 +27,7 @@ no_index:
 provides:
   Text::Haml:
     file: lib/Text/Haml.pm
-    version: 0.990114
+    version: 0.990115
 requires:
   Carp: 0
   Data::Section::Simple: 0
@@ -41,7 +41,7 @@ resources:
   bugtracker: https://github.com/vti/text-haml/issues
   homepage: https://github.com/vti/text-haml
   repository: git://github.com/vti/text-haml.git
-version: 0.990114
+version: 0.990115
 x_contributors:
   - 'enosis <enosis@github.com>'
   - 'rightgo09 <skyarrow09@gmail.com>'
@@ -52,6 +52,6 @@ x_contributors:
   - 'Neil Bowers <neil@bowers.com>'
   - 'Evgenni Grishkovelli <grishkovelli@gmail.com>'
   - 'Hyungsuk Hong <aanoaa@gmail.com>'
-  - 'TheAthlete <theathlet@yandex.ru>'
   - 'Keedi Kim <keedi.k@gmail.com>'
+  - 'TheAthlete <theathlet@yandex.ru>'
   - 'Viacheslav Tykhanovskyi <viacheslav.t@gmail.com>'
