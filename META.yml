@@ -8,7 +8,7 @@ configure_requires:
   CPAN::Meta::Prereqs: 0
   Module::Build: 0.38
 dynamic_config: 0
-generated_by: 'Minilla/v0.7.5, CPAN::Meta::Converter version 2.130880'
+generated_by: 'Minilla/v0.14.1, CPAN::Meta::Converter version 2.120921'
 license: unknown
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -27,7 +27,7 @@ no_index:
 provides:
   Text::Haml:
     file: lib/Text/Haml.pm
-    version: 0.990115
+    version: 0.990116
 requires:
   Carp: 0
   Data::Section::Simple: 0
@@ -41,7 +41,7 @@ resources:
   bugtracker: https://github.com/vti/text-haml/issues
   homepage: https://github.com/vti/text-haml
   repository: git://github.com/vti/text-haml.git
-version: 0.990115
+version: 0.990116
 x_contributors:
   - 'enosis <enosis@github.com>'
   - 'rightgo09 <skyarrow09@gmail.com>'
@@ -54,4 +54,4 @@ x_contributors:
   - 'Hyungsuk Hong <aanoaa@gmail.com>'
   - 'Keedi Kim <keedi.k@gmail.com>'
   - 'TheAthlete <theathlet@yandex.ru>'
-  - 'Viacheslav Tykhanovskyi <viacheslav.t@gmail.com>'
+  - 'vti <viacheslav.t@gmail.com>'
